@@ -55,6 +55,8 @@ def image_handler(update: Update, context: CallbackContext):
         send_message(context.bot, update.effective_chat.id, 'This is a "' + game_type + '" game!')
         if game_type == 'checkers':
             send_checkers_options(update=update)
+        elif game_type == 'ttt':
+            handlers['detect_tictactoe']('image.png', update.effective_chat.id)
     else:
         send_message(context.bot, update.effective_chat.id, 'The error has occured')
 
