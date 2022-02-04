@@ -1,6 +1,6 @@
 import json
-from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters, Updater
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters, Updater, CallbackQueryHandler
 
 
 updater = None
@@ -17,6 +17,30 @@ def start(update: Update, context: CallbackContext):
     send_message(context.bot, update.effective_chat.id, 'Hello!\nSend me a picture of a board game and i will try to classify it!')
 
 
+def send_checkers_options(update: Update):
+    keyboard = [
+        [InlineKeyboardButton("White", callback_data='White')],
+        [InlineKeyboardButton("Black", callback_data='Black')],
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text('Who started playing on top?', reply_markup=reply_markup)
+
+
+def checkers_button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    query.answer()
+
+    query.edit_message_text(text=f"{query.data} started playing on top")
+
+    try:
+        send_message(context.bot, update.effective_chat.id, 'Analyzing checkers game field...')
+        detect_checkers('image.png', update.effective_chat.id, query.data=='Black')
+    except:
+        send_message(context.bot, update.effective_chat.id, 'Analyzing failed!')
+
+
 def image_handler(update: Update, context: CallbackContext):
     image_id = None
     if update.message.document is not None:
@@ -31,11 +55,7 @@ def image_handler(update: Update, context: CallbackContext):
         game_type = classifyGame('image.png')
         send_message(context.bot, update.effective_chat.id, 'This is a "' + game_type + '" game!')
         if game_type == 'checkers':
-            try:
-                send_message(context.bot, update.effective_chat.id, 'Analyzing checkers game field...')
-                detect_checkers('image.png', update.effective_chat.id)
-            except:
-                send_message(context.bot, update.effective_chat.id, 'Analyzing failed!')
+            send_checkers_options(update=update)
     else:
         send_message(context.bot, update.effective_chat.id, 'The error has occured')
 
@@ -58,6 +78,7 @@ def initBot(token=None, classifyGameFunction=None, detect_checkersFunction=None)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start))
     dispatcher.add_handler(MessageHandler((Filters.document.image | Filters.photo) & (~Filters.command), image_handler))
+    dispatcher.add_handler(CallbackQueryHandler(checkers_button))
 
     updater.start_polling()
     return updater.bot
