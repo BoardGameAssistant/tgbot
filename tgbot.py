@@ -5,8 +5,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filter
 
 updater = None
 dispatcher = None
-classifyGame = None
-detect_checkers = None
+handlers = None
 
 
 def send_message(bot, chat_id, text):
@@ -36,7 +35,7 @@ def checkers_button(update: Update, context: CallbackContext) -> None:
 
     try:
         send_message(context.bot, update.effective_chat.id, 'Analyzing checkers game field...')
-        detect_checkers('image.png', update.effective_chat.id, query.data=='Black')
+        handlers['detect_checkers']('image.png', update.effective_chat.id, query.data=='Black')
     except:
         send_message(context.bot, update.effective_chat.id, 'Analyzing failed!')
 
@@ -52,7 +51,7 @@ def image_handler(update: Update, context: CallbackContext):
         obj = context.bot.get_file(image_id)
         obj.download('image.png')
 
-        game_type = classifyGame('image.png')
+        game_type = handlers['classifyGame']('image.png')
         send_message(context.bot, update.effective_chat.id, 'This is a "' + game_type + '" game!')
         if game_type == 'checkers':
             send_checkers_options(update=update)
@@ -60,18 +59,16 @@ def image_handler(update: Update, context: CallbackContext):
         send_message(context.bot, update.effective_chat.id, 'The error has occured')
 
 
-def initBot(token=None, classifyGameFunction=None, detect_checkersFunction=None):
+def initBot(token=None, handlers_fns=None):
     global updater
     global dispatcher
-    global classifyGame
-    global detect_checkers
+    global handlers
+
+    handlers = handlers_fns
 
     if token is None:
         print('Please specify telegram bot token')
         return
-
-    classifyGame = classifyGameFunction
-    detect_checkers = detect_checkersFunction
 
     updater = Updater(token=token, use_context=True)
 
