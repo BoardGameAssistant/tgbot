@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filter
 updater = None
 dispatcher = None
 handlers = None
-
+carcassone_img = False
 
 def send_message(bot, chat_id, text):
     bot.send_message(chat_id=chat_id, text=text)
@@ -41,6 +41,8 @@ def checkers_button(update: Update, context: CallbackContext) -> None:
 
 
 def image_handler(update: Update, context: CallbackContext):
+    global carcassone_img
+
     image_id = None
     if update.message.document is not None:
         image_id = update.message.document.file_id
@@ -48,15 +50,29 @@ def image_handler(update: Update, context: CallbackContext):
         image_id = update.message.photo[len(update.message.photo) - 1].file_id
 
     if image_id is not None:
-        obj = context.bot.get_file(image_id)
-        obj.download('image.png')
+        if carcassone_img:
+            carcassone_img = False
+            obj = context.bot.get_file(image_id)
+            obj.download('carcassone_card.png')
+            try:
+                send_message(context.bot, update.effective_chat.id, 'Analyzing carcassone game field...')
+                handlers['detect_carcassone']('image.png', 'carcassone_card.png', update.effective_chat.id)
+            except:
+                send_message(context.bot, update.effective_chat.id, 'Analyzing failed!')
+        else:
+            obj = context.bot.get_file(image_id)
+            obj.download('image.png')
 
-        game_type = handlers['classifyGame']('image.png')
-        send_message(context.bot, update.effective_chat.id, 'This is a "' + game_type + '" game!')
-        if game_type == 'checkers':
-            send_checkers_options(update=update)
-        elif game_type == 'ttt':
-            handlers['detect_tictactoe']('image.png', update.effective_chat.id)
+            game_type = handlers['classifyGame']('image.png')
+            send_message(context.bot, update.effective_chat.id, 'This is a "' + game_type + '" game!')
+            if game_type == 'checkers':
+                send_checkers_options(update=update)
+            elif game_type == 'ttt':
+                send_message(context.bot, update.effective_chat.id, 'Analyzing tictactoe game field...')
+                handlers['detect_tictactoe']('image.png', update.effective_chat.id)
+            elif game_type == 'carcassone':
+                carcassone_img = True
+                send_message(context.bot, update.effective_chat.id, 'Please send a photo of the card')
     else:
         send_message(context.bot, update.effective_chat.id, 'The error has occured')
 
