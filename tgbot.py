@@ -1,4 +1,3 @@
-import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext, CommandHandler, MessageHandler, Filters, Updater, CallbackQueryHandler
 
@@ -7,6 +6,7 @@ updater = None
 dispatcher = None
 handlers = None
 carcassone_img = False
+
 
 def send_message(bot, chat_id, text):
     bot.send_message(chat_id=chat_id, text=text)
@@ -21,16 +21,13 @@ def send_checkers_options(update: Update):
         [InlineKeyboardButton("White", callback_data='White')],
         [InlineKeyboardButton("Black", callback_data='Black')],
     ]
-
     reply_markup = InlineKeyboardMarkup(keyboard)
-
     update.message.reply_text('Who started playing on top?', reply_markup=reply_markup)
 
 
 def checkers_button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     query.answer()
-
     query.edit_message_text(text=f"{query.data} started playing on top")
 
     try:
@@ -97,11 +94,3 @@ def initBot(token=None, handlers_fns=None):
 
     updater.start_polling()
     return updater.bot
-
-
-def stopBot():
-    if updater is not None:
-        updater.stop_polling()
-        print('Bot has stopped')
-    else:
-        print('Bot was already stopped')
